@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_test/data/models/user_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -21,32 +24,49 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     LoginAuthWithGoogleEvent event,
     Emitter<LoginState> emit,
   ) async {
-    try {
-      final GoogleSignIn signIn = GoogleSignIn.instance;
-      await signIn.initialize(
-        serverClientId:
-            '257182906865-34kq141bu0hl206vfip67o3pequgr618.apps.googleusercontent.com',
-      );
+    final GoogleSignIn signIn = GoogleSignIn.instance;
+    await signIn.initialize(
+      serverClientId:
+          '559358280217-kn1h8a4a87ct92s1ev3sue5obf59igfh.apps.googleusercontent.com',
+    );
+    signIn.authenticationEvents
+        .listen(_handleAuthenticationEvent)
+        .onError(_handleAuthenticationError);
 
-      signIn.authenticationEvents.listen((event) {
-        switch (event) {
-          case GoogleSignInAuthenticationEventSignIn():
-            print('Signed in: ${event.user.authentication.idToken}');
-            final storage = FlutterSecureStorage();
-            storage.write(
-              key: 'idToken',
-              value: event.user.authentication.idToken,
-            );
+    signIn.authenticate();
+  }
 
-          case GoogleSignInAuthenticationEventSignOut():
-            print('Signed out');
+  void _handleAuthenticationEvent(GoogleSignInAuthenticationEvent event) async {
+    if (event is GoogleSignInAuthenticationEventSignIn) {
+      final storage = FlutterSecureStorage();
+
+      final idToken = event.user.authentication.idToken;
+      storage.write(key: 'idToken', value: idToken);
+
+      // Firebase Auth — только idToken, без accessToken
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      // Теперь Firestore видит авторизованного пользователя
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
+                'name': user.displayName ?? '',
+                'email': user.email ?? '',
+                'lastLogin': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true));
+        } catch (e) {
+          print('Firestore error: $e');
         }
-      });
-
-      // Запуск аутентификации
-      await signIn.authenticate();
-    } catch (e) {
-      print('Google sign-in error: $e');
+      }
     }
+  }
+
+  void _handleAuthenticationError(Object error) {
+    print('error $error');
   }
 }

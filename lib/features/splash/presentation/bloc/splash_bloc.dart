@@ -20,10 +20,14 @@ class SplashBloc extends Bloc<SplashEvent, SplashState> {
     on<SplashInitialEvent>(_onInit);
   }
 
-  FutureOr<void> _onInit(SplashInitialEvent event, Emitter<SplashState> emit) async{
+  FutureOr<void> _onInit(
+    SplashInitialEvent event,
+    Emitter<SplashState> emit,
+  ) async {
+    print('init');
     final storage = FlutterSecureStorage();
     final idToken = await storage.read(key: 'idToken');
-    print(idToken);
-    emit(idToken == null ? SplashUnAuthenticatedState (): SplashAuthenticatedState());
+    print('id token $idToken');
+    emit(idToken ==null ? SplashUnAuthenticatedState() : SplashAuthenticatedState());
   }
 }
