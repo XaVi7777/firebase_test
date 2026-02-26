@@ -10,6 +10,8 @@ abstract class LoginState {}
 
 class LoginInitialState extends LoginState {}
 
+class LoginSuccessState extends LoginState {}
+
 abstract class LoginEvent {}
 
 class LoginAuthWithGoogleEvent extends LoginEvent {}
@@ -29,13 +31,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           '559358280217-kn1h8a4a87ct92s1ev3sue5obf59igfh.apps.googleusercontent.com',
     );
     signIn.authenticationEvents
-        .listen(_handleAuthenticationEvent)
+        .listen((event) => _handleAuthenticationEvent(event, emit))
         .onError(_handleAuthenticationError);
 
     signIn.authenticate();
   }
 
-  void _handleAuthenticationEvent(GoogleSignInAuthenticationEvent event) async {
+  void _handleAuthenticationEvent(
+    GoogleSignInAuthenticationEvent event,
+    Emitter<LoginState> emit,
+  ) async {
     if (event is GoogleSignInAuthenticationEventSignIn) {
       final storage = FlutterSecureStorage();
 
@@ -48,6 +53,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         credential,
       );
       final authethicatedUser = userCredential.user;
+
       if (authethicatedUser != null) {
         await FirebaseFirestore.instance
             .collection('users')
@@ -57,6 +63,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
               'email': authethicatedUser.email,
               'lastLogin': FieldValue.serverTimestamp(),
             }, SetOptions(merge: true));
+        emit(LoginSuccessState());
       }
     }
   }

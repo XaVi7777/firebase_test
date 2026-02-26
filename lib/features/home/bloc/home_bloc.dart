@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_test/data/models/task_model.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 abstract class HomeEvent {}
 
@@ -21,6 +21,12 @@ abstract class HomeState {}
 
 class HomeInitialState extends HomeState {}
 
+class HomeLoadedState extends HomeState {
+  final List<TaskModel> tasks;
+
+  HomeLoadedState({required this.tasks});
+}
+
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeInitialState()) {
     on<HomeLogoutEvent>(_onLogout);
@@ -32,8 +38,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     HomeLogoutEvent event,
     Emitter<HomeState> emit,
   ) async {
-    final storage = FlutterSecureStorage();
-    await storage.delete(key: 'idToken');
+    await FirebaseAuth.instance.signOut();
+    await GoogleSignIn.instance.signOut();
   }
 
   FutureOr<void> _onHomeLoadTasks(
@@ -47,10 +53,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           .doc(uid)
           .collection('tasks')
           .get();
-        
-      final tasks = response.docs.map((current) {
-        return TaskModel.fromJson(current.data());
+      final List<TaskModel> tasks = response.docs.map((json) {
+        final model = TaskModel.fromJson(json.data());
+        return model;
       }).toList();
+      emit(HomeLoadedState(tasks: tasks));
     } catch (e) {
       print('load error $e');
     }
@@ -62,11 +69,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) async {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
+      final task = TaskModel(text: event.text);
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .collection('tasks')
-          .add({'text': event.text, 'createdAt': FieldValue.serverTimestamp()});
+          .add(task.toJson());
       add(HomeLoadTasksEvent());
     } catch (e) {
       print('add task error $e');

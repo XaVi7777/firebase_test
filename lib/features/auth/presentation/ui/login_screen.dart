@@ -1,6 +1,7 @@
 import 'package:firebase_test/features/auth/presentation/bloc/login_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -13,7 +14,10 @@ class LoginScreen extends StatelessWidget {
         create: (BuildContext context) => LoginBloc(),
         child: BlocListener<LoginBloc, LoginState>(
           listener: (context, state) {
-            print('listener');
+
+            if (state is LoginSuccessState) {
+              context.replace('/home');
+            }
           },
           child: Container(
             decoration: BoxDecoration(

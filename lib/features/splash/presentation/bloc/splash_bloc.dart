@@ -25,21 +25,13 @@ class SplashBloc extends Bloc<SplashEvent, SplashState> {
     SplashInitialEvent event,
     Emitter<SplashState> emit,
   ) async {
-    try {
-      final storage = FlutterSecureStorage();
-      final idToken = await storage.read(key: 'idToken');
-      final credential = GoogleAuthProvider.credential(idToken: idToken);
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
-      print('userCredential ${userCredential.user?.email}');
-      emit(
-        idToken == null
-            ? SplashUnAuthenticatedState()
-            : SplashAuthenticatedState(),
-      );
-    } catch (e) {
-      print('e $e');
+    // Firebase сам хранит сессию, просто проверяем текущего пользователя
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      emit(SplashAuthenticatedState());
+    } else {
+      emit(SplashUnAuthenticatedState());
     }
   }
 }

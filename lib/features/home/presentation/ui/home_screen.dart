@@ -14,7 +14,9 @@ class HomeScreen extends StatelessWidget {
           child: BlocBuilder<HomeBloc, HomeState>(
             builder: (context, state) {
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16).copyWith(bottom: 32, top: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                ).copyWith(bottom: 32, top: 16),
                 child: Column(
                   children: [
                     ElevatedButton(
@@ -23,6 +25,14 @@ class HomeScreen extends StatelessWidget {
                       },
                       child: Text('Log out'),
                     ),
+                    if (state is HomeLoadedState)
+                      ListView.builder(
+                        shrinkWrap: true,
+                        itemBuilder: (context, index) {
+                          return Text(state.tasks[index].text);
+                        },
+                        itemCount: state.tasks.length,
+                      ),
                     Spacer(),
                     ElevatedButton(
                       onPressed: () {
