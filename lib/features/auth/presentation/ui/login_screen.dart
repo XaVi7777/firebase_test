@@ -63,7 +63,6 @@ class LoginScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
 
-                      // Подзаголовок
                       const Text(
                         'Войдите, чтобы продолжить',
                         style: TextStyle(fontSize: 16, color: Colors.white70),

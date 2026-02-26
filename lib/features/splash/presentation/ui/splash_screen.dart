@@ -12,7 +12,6 @@ class SplashScreen extends StatelessWidget {
       create: (BuildContext context) => SplashBloc()..add(SplashInitialEvent()),
       child: BlocListener<SplashBloc, SplashState>(
         listener: (context, state) {
-          print('splash state $state');
           if (state is SplashAuthenticatedState) {
             context.replace('/home');
           } else if (state is SplashUnAuthenticatedState) {
